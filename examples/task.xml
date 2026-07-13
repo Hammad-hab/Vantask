@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<task>
+    <launcher_cmd exec="open README.md"/>
+    <pinned name="Firefox" icon="assets/icons/firefox.svg" exec="firefox"/>
+    <pinned name="Terminal" icon="assets/icons/utilities-terminal.svg" exec="xterm"/>
+    <pinned name="Files" icon="assets/icons/file-manager.svg" exec="nautilus"/>
+    <pinned name="Chrome" icon="assets/icons/google-chrome.svg" exec="google-chrome"/>
+    <pinned name="Visual Studio Code" icon="assets/icons/code.svg" exec="code"/>
+    <pinned name="Settings" icon="assets/icons/preferences-system.svg" exec="vantum-settings"/>
+</task>

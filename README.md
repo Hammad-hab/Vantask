@@ -2,6 +2,8 @@
 
 Floating taskbar/dock for Vantum. Companion to Vantyl (the app launcher).
 
+<img src='assets/screenshot.png'/>
+
 ## What it does (v1 scope)
 
 - Shows currently running windows as a floating, auto-sizing dock,
@@ -49,7 +51,8 @@ nothing to query on macOS. Develop/test on:
 
 ## Files
 
-- `vantusk.py` — the dock itself.
+- `vantask.py` — the dock itself.
+- `mockWnck.py` — Since Wnck doesn't exist on macos, this is a test module that mimics the Wnck for testing.
 
 ## Autostart (JWM)
 
