@@ -6,6 +6,7 @@ import shlex
 import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
+import cairo
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -27,7 +28,6 @@ from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 CSS = """
 window {
     background-color: rgb(32, 32, 32);
-    border-radius: 16px;
 }
 
 .dock {
@@ -613,30 +613,50 @@ class VantaskWindow(Gtk.Window):
     def _on_realize(self, *_):
         self._reposition()
 
+    def _apply_rounded_shape(self, width, height):
+        radius = 12  # match your CSS border-radius
+
+        surface = cairo.ImageSurface(cairo.FORMAT_A1, width, height)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgba(0, 0, 0, 1)
+
+        ctx.new_sub_path()
+        ctx.arc(width - radius, radius, radius, -90 * (3.14159 / 180), 0)
+        ctx.arc(width - radius, height - radius, radius, 0, 90 * (3.14159 / 180))
+        ctx.arc(radius, height - radius, radius, 90 * (3.14159 / 180), 180 * (3.14159 / 180))
+        ctx.arc(radius, radius, radius, 180 * (3.14159 / 180), 270 * (3.14159 / 180))
+        ctx.close_path()
+        ctx.fill()
+
+        region = Gdk.cairo_region_create_from_surface(surface)
+        self.get_window().shape_combine_region(region, 0, 0)
+
     def _reposition(self):
         display = Gdk.Display.get_default()
         monitor = display.get_primary_monitor() or display.get_monitor(0)
 
-        # get_workarea() excludes menu bar / system dock space where
-        # supported; falls back to get_geometry() otherwise.
         try:
             geo = monitor.get_workarea()
         except AttributeError:
             geo = monitor.get_geometry()
 
-        # Ask for natural size directly instead of resize()+get_size(),
-        # which can read stale dimensions before GTK reflows.
         _, natural = self.get_preferred_size()
         width, height = natural.width, natural.height
 
         x = geo.x + (geo.width - width) // 2
         y = geo.y + geo.height - height - DOCK_MARGIN_BOTTOM
-        y = max(geo.y, min(y, geo.y + geo.height - height))  # clamp on screen
+        y = max(geo.y, min(y, geo.y + geo.height - height))
 
         self.move(x, y)
         self.resize(width, height)
-        return False  # if called via idle_add, run once
 
+        # Mask must be re-cut every time the window's actual size changes,
+        # using the SAME width/height we just resized to -- not a stale
+        # get_size() read from before layout settled.
+        if self.get_realized():
+            self._apply_rounded_shape(width, height)
+
+        return False
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Vantask task dock")
