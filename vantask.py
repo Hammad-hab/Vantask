@@ -19,6 +19,8 @@ except (ValueError, ImportError):
         print("[Vantask] libwnck unavailable -- using mock_wnck (dev only)")
     else:
         raise
+else:
+    print('Successfully imported')
 
 from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 
@@ -67,12 +69,12 @@ window {
 
 PROCESS_FILE = "/tmp/processz.tmp"
 ICON_SIZE = 40
-DOCK_MARGIN_BOTTOM = 14
+DOCK_MARGIN_BOTTOM = 150
 
 # Where Vantyl lives -- adjust if it's laid out differently on your machine.
 # # Fallback if no <launcher_cmd/> is present in task.xml (or no task file given).
 DEFAULT_LAUNCHER_CMD = ["python3.14", os.path.expanduser("~/Documents/Hammad/Vantyl/vantyl.py")]
-
+EXCLUDED_WINDOW_NAMES = {'Vantyl'}
 # ---------------------------------------------------------------------
 # Vantyl process registry (best-effort pid -> {name, cmd} lookup)
 # ---------------------------------------------------------------------
@@ -519,8 +521,10 @@ class VantaskWindow(Gtk.Window):
             return False
         if wnck_window.is_skip_tasklist():
             return False
+        if wnck_window.get_name() in EXCLUDED_WINDOW_NAMES:
+            return False
         return True
-
+        
     def _initial_populate(self):
         for w in self.wnck_screen.get_windows():
             if self._should_show(w):
@@ -649,6 +653,7 @@ def main():
     win = VantaskWindow(task_file=args.task_file)
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
+    print('Showing windows!')
 
     Gtk.main()
 
