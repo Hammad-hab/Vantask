@@ -439,17 +439,64 @@ class VantaskWindow(Gtk.Window):
         self._build_pinned_tiles(task_file)
 
         self.wnck_screen = Wnck.Screen.get_default()
+        self._active_win = None
+        self._active_state_handler_id = None
+        ...
         self.wnck_screen.connect("window-opened", self._on_window_opened)
         self.wnck_screen.connect("window-closed", self._on_window_closed)
         self.wnck_screen.connect(
             "active-window-changed", self._on_active_window_changed
         )
-
         # Wnck needs a mainloop pass to populate its initial window list.
         GLib.idle_add(self._initial_populate)
 
         self.connect("realize", self._on_realize)
 
+    def _on_active_window_changed(self, screen, previous_window):
+        for kind, tile in self.tiles.values():
+            if kind == "pinned":
+                tile._update_style()
+            else:
+                tile._update_active_style()
+        self._track_active_window()
+
+    def _track_active_window(self):
+        """Follow the currently-active window so we can react to it going
+        fullscreen -- both when focus switches to a different (already
+        fullscreen) window, and when the SAME window toggles fullscreen
+        in place (e.g. F11 in a browser that was already focused)."""
+        active = self.wnck_screen.get_active_window()
+
+        if active is self._active_win:
+            self._update_visibility_for_fullscreen()
+            return
+
+        if self._active_win is not None and self._active_state_handler_id is not None:
+            try:
+                self._active_win.disconnect(self._active_state_handler_id)
+            except Exception:
+                pass
+
+        self._active_win = active
+        self._active_state_handler_id = None
+
+        if active is not None:
+            self._active_state_handler_id = active.connect(
+                "state-changed", lambda *_: self._update_visibility_for_fullscreen()
+            )
+
+        self._update_visibility_for_fullscreen()
+
+    def _update_visibility_for_fullscreen(self):
+        active = self.wnck_screen.get_active_window()
+        is_fullscreen = bool(active is not None and active.is_fullscreen())
+
+        if is_fullscreen and self.get_visible():
+            self.hide()
+        elif not is_fullscreen and not self.get_visible():
+            self.show_all()
+            self.set_keep_above(True)  # re-assert -- some WMs drop 'above' across a hide/show cycle
+            
     def load_css(self):
         provider = Gtk.CssProvider()
         provider.load_from_data(CSS.encode("utf-8"))
@@ -545,8 +592,9 @@ class VantaskWindow(Gtk.Window):
         for w in self.wnck_screen.get_windows():
             if self._should_show(w):
                 self._handle_window_opened(w)
+        self._track_active_window()
         return False  # run once
-
+        
     def _friendly_name_for(self, wnck_window, vantyl_tasks):
         pid = wnck_window.get_pid()
         entry = vantyl_tasks.get(str(pid)) or vantyl_tasks.get(pid)
