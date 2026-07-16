@@ -58,4 +58,4 @@ nothing to query on macOS. Develop/test on:
 
 Not wired up yet. When ready, add a launch line to `.jwmrc`'s startup
 section (same place Vantyl's XML sandbox config lives) so Vantusk comes
-up alongside the desktop session.
+up alongside the desktop session. 

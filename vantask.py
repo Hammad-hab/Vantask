@@ -25,6 +25,8 @@ else:
 
 from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 
+
+
 CSS = """
 window {
     background-color: rgb(32, 32, 32);
@@ -69,11 +71,11 @@ window {
 
 PROCESS_FILE = "/tmp/processz.tmp"
 ICON_SIZE = 40
-DOCK_MARGIN_BOTTOM = 150
+DOCK_MARGIN_BOTTOM = 14
 
 # Where Vantyl lives -- adjust if it's laid out differently on your machine.
 # # Fallback if no <launcher_cmd/> is present in task.xml (or no task file given).
-DEFAULT_LAUNCHER_CMD = ["python3.14", os.path.expanduser("~/Documents/Hammad/Vantyl/vantyl.py")]
+DEFAULT_LAUNCHER_CMD = ["python3.14", os.path.expanduser("~/Documents/Hammad/Vantyl/vantyl.py"), os.path.expanduser("~/Documents/Hammad/Vantyl/examples/menu.xml")]
 EXCLUDED_WINDOW_NAMES = {'Vantyl'}
 # ---------------------------------------------------------------------
 # Vantyl process registry (best-effort pid -> {name, cmd} lookup)
@@ -468,7 +470,21 @@ class VantaskWindow(Gtk.Window):
         separator.set_size_request(1, ICON_SIZE)
         self.box.pack_start(separator, False, False, 0)
 
+    def _find_vantyl_window(self):
+        """Look up Vantyl's own window via Wnck, if it's currently running.
+        Excluded from the dock's tile list, but still visible to Wnck."""
+        for w in self.wnck_screen.get_windows():
+            if w.get_window_type() == Wnck.WindowType.NORMAL and w.get_name() in EXCLUDED_WINDOW_NAMES:
+                return w
+        return None
+
     def _launch_vantyl(self):
+        existing = self._find_vantyl_window()
+        if existing is not None:
+            # Vantyl's already open -- close it instead of spawning another.
+            existing.close(Gdk.CURRENT_TIME)
+            return
+
         try:
             subprocess.Popen(self.launcher_cmd)
         except Exception as exc:

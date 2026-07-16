@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <task>
-    <launcher_cmd exec="open README.md"/>
     <pinned name="Firefox" icon="assets/icons/firefox.svg" exec="firefox"/>
     <pinned name="Terminal" icon="assets/icons/utilities-terminal.svg" exec="xterm"/>
     <pinned name="Files" icon="assets/icons/file-manager.svg" exec="nautilus"/>
