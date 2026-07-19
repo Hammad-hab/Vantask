@@ -254,10 +254,16 @@ class TaskTile(Gtk.EventBox):
     def _build_icon(self, wnck_window):
         pixbuf = wnck_window.get_icon()
         if pixbuf:
-            if pixbuf.get_width() != ICON_SIZE:
-                pixbuf = pixbuf.scale_simple(
-                    ICON_SIZE, ICON_SIZE, GdkPixbuf.InterpType.BILINEAR
+            w, h = pixbuf.get_width(), pixbuf.get_height()
+            if w != ICON_SIZE or h != ICON_SIZE:
+                scale = ICON_SIZE / max(w, h)
+                new_w, new_h = round(w * scale), round(h * scale)
+                interp = (
+                    GdkPixbuf.InterpType.BILINEAR
+                    if scale < 1
+                    else GdkPixbuf.InterpType.HYPER
                 )
+                pixbuf = pixbuf.scale_simple(new_w, new_h, interp)
             return Gtk.Image.new_from_pixbuf(pixbuf)
         return load_icon_image(None, ICON_SIZE)
 
